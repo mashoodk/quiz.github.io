@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade 2 Math Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('https://source.unsplash.com/random/1600x900');
+            background-size: cover;
+        }
+        .container {
+            width: 60%;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            margin: 20px auto;
+            border-radius: 10px;
+        }
+        h1 {
+            text-align: center;
+        }
+        button {
+            display: block;
+            width: 150px;
+            margin: 10px auto;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 1.1rem;
+        }
+        .quiz-question {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Grade 2 Math Quiz</h1>
+        <label>
+            Child's name:
+            <input id="child-name" type="text">
+        </label>
+        <button id="start-button">Start</button>
+        <form id="quiz-form" style="display: none;">
+            <!-- The quiz questions will be inserted here by JavaScript -->
+        </form>
+        <button id="submit-button" style="display: none;">Submit</button>
+        <button id="end-button" style="display: none;">End</button>
+        <button id="reset-button" style="display: none;">Try again</button>
+        <div id="results"></div>
+    </div>
+    <script>
+        const childNameInput = document.getElementById('child-name');
+        const startButton = document.getElementById('start-button');
+        const quizForm = document.getElementById('quiz-form');
+        const submitButton = document.getElementById('submit-button');
+        const endButton = document.getElementById('end-button');
+        const resetButton = document.getElementById('reset-button');
+        const resultsDiv = document.getElementById('results');
+
+        let cumulativeScore = 0;
+        let attempts = 0;
+		let currentQuestions;
+
+        function generateQuestions() {
+            // Add your grade 2 math question templates here
+            const questionTemplates = [
+			{
+				template: '{a} + {b}',
+				min: 10,
+				max: 99,
+				correctAnswer: (a, b) => a + b,
+			},
+			{
+				template: '{a} - {b}',
+				min: 10,
+				max: 99,
+				correctAnswer: (a, b) => a - b,
+				generateValidPair: generateValidSubtractionPair,
+			},
+			{
+				template: '{a} × {b}',
+				minA: 10,
+				maxA: 99,
+				minB: 1,
+				maxB: 9,
+				correctAnswer: (a, b) => a * b,
+			},
+			{
+				template: '{a} ÷ {b}',
+				minA: 10,
+				maxA: 99,
+				minB: 1,
+				maxB: 9,
+				correctAnswer: (a, b) => a / b,
+				generateValidPair: generateValidDivisionPair,
+			},
+		];
+
+
+             const questions = questionTemplates.map(({ template, min, max, correctAnswer, generateValidPair, minA, maxA, minB, maxB }) => {
+				let a, b;
+
+				if (generateValidPair) {
+					[a, b] = generateValidPair(min || minA, max || maxA, minB, maxB);
+				} else {
+					a = Math.floor(Math.random() * ((max || maxA) - (min || minA) + 1) + (min || minA));
+					b = Math.floor(Math.random() * ((max || maxB) - (min || minB) + 1) + (min || minB));
+				}
+
+				const text = template.replace('{a}', a).replace('{b}', b);
+				const answer = correctAnswer(a, b);
+
+				const choices = [answer];
+				while (choices.length < 4) {
+					const randomChoice = Math.floor(Math.random() * ((max || maxA) - (min || minA) + 1) + (min || minA));
+					if (!choices.includes(randomChoice)) {
+						choices.push(randomChoice);
+					}
+				}
+
+				choices.sort(() => Math.random() - 0.5);
+
+				return [text, String(answer), choices];
+			});
+
+			return questions;
+		}
+		
+		function generateValidSubtractionPair(min, max) {
+			let a = Math.floor(Math.random() * (max - min + 1) + min);
+			let b = Math.floor(Math.random() * (max - min + 1) + min);
+
+			if (a < b) {
+				[a, b] = [b, a];
+			}
+
+			return [a, b];
+		}
+
+		function generateValidDivisionPair(minA, maxA, minB, maxB) {
+			let a = Math.floor(Math.random() * (maxA - minA + 1) + minA);
+			let b = Math.floor(Math.random() * (maxB - minB + 1) + minB);
+			
+			a = Math.floor(a / b) * b; // Ensures a is divisible by b
+			
+			window.alert(maxB);
+
+			return [a, b];
+		}
+
+		function displayQuestions(questions) {
+			quizForm.innerHTML = '';
+			questions.forEach((question, index) => {
+				const [text, correctAnswer, choices] = question;
+				const questionDiv = document.createElement('div');
+				//window.alert(correctAnswer, " ",choices);
+				questionDiv.classList.add('quiz-question');
+				questionDiv.innerHTML = `
+					<p>${index + 1}. ${text}</p>
+					${choices.map(choice => `
+						<label>
+							<input type="radio" name="question-${index}" value="${choice}">
+							${choice}
+						</label>
+					`).join('<br>')}
+				`;
+				quizForm.appendChild(questionDiv);
+			});
+		}
+
+
+        function validateAnswers(questions) {
+			let score = 0;
+			questions.forEach((question, index) => {
+				const [, correctAnswer] = question;
+				const selectedOption = Array.from(quizForm['question-' + index]).find(option => option.checked);
+				const answer = selectedOption ? selectedOption.value : null;
+				//window.alert(choices);
+				//window.alert(answer);
+				if (answer === correctAnswer) {
+					score++;
+				}
+			});
+			return score;
+		}
+
+
+        function resetQuiz() {
+            const questions = generateQuestions();
+            displayQuestions(questions);
+            resultsDiv.textContent = '';
+        }
+
+        startButton.addEventListener('click', () => {
+			const childName = childNameInput.value;
+			if (!childName) {
+				alert('Please enter the child\'s name.');
+				return;
+			}
+			startButton.style.display = 'none';
+			childNameInput.style.display = 'none';
+			quizForm.style.display = 'block';
+			submitButton.style.display = 'block';
+			resetButton.style.display = 'block';
+			endButton.style.display = 'block';
+			currentQuestions = generateQuestions();
+			displayQuestions(currentQuestions);
+		});
+
+
+		submitButton.addEventListener('click', () => {
+			//window.alert("Submit clicked");
+			const score = validateAnswers(currentQuestions);
+			cumulativeScore += score;
+			attempts++;
+			resultsDiv.textContent = `You scored ${score} out of ${currentQuestions.length} for this attempt!`;
+			resultsDiv.textContent += `\nCumulative score: ${cumulativeScore} out of ${attempts * currentQuestions.length}`;
+		});
+
+
+		resetButton.addEventListener('click', () => {
+			currentQuestions = generateQuestions();
+			displayQuestions(currentQuestions);
+			resultsDiv.textContent = '';
+		});
+
+        endButton.addEventListener('click', () => {
+            startButton.style.display = 'block';
+            childNameInput.style.display = 'inline';
+            quizForm.style.display = 'none';
+            submitButton.style.display = 'none';
+            resetButton.style.display = 'none';
+            endButton.style.display = 'none';
+            resultsDiv.textContent = '';
+            cumulativeScore = 0;
+            attempts = 0;
+        });
+    </script>
+</body>
+</html>
+
+
